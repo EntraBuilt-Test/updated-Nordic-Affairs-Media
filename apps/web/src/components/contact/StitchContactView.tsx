@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 import type { Locale } from '@/i18n/config'
-import type { Dictionary } from '@/i18n/getDictionary'
-import type { SiteChrome } from '@/lib/queries'
+import type { Dictionary } from '@/i18n/dictionaries/en'
+import type { SiteSettingsData } from '@/payload-types'
 
 type Props = {
   locale: Locale
   t: Dictionary
-  settings: SiteChrome['settings']
+  settings: SiteSettingsData
 }
 
 const CONTACT_STRINGS: Record<

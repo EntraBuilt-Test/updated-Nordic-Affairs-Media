@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import type { Locale } from '@/i18n/config'
-import type { Dictionary } from '@/i18n/getDictionary'
+import type { Dictionary } from '@/i18n/dictionaries/en'
 import { href } from '@/lib/site'
 
 type ArticleItem = {

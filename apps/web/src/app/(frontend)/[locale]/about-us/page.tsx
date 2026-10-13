@@ -109,7 +109,7 @@ export default async function AboutPage({ params }: Props) {
   if (!isLocale(locale)) notFound()
   const t = getDictionary(locale)
   const { settings } = await getSiteChrome(locale)
-  const enquire = whatsappUrl(settings.whatsappNumber, t.whatsappGreeting)
+  const enquire = whatsappUrl(settings.whatsapp, t.whatsappMessage)
 
   return (
     <>
