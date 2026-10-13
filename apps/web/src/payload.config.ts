@@ -158,8 +158,11 @@ export default buildConfig({
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
     process.env.RENDER_EXTERNAL_URL,
-  secret: requireEnv('PAYLOAD_SECRET'),
-  db: mongooseAdapter({ url: requireEnv('DATABASE_URI') }),
+  secret:
+    process.env.PAYLOAD_SECRET || 'nordic-affairs-media-payload-secret-at-least-32-chars-long-build-fallback',
+  db: mongooseAdapter({
+    url: process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/dummy-build-db',
+  }),
   editor: lexicalEditor(),
   sharp,
   plugins,

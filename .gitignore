@@ -5,7 +5,6 @@ dist
 .env.local
 *.log
 .DS_Store
-apps/web/src/payload-types.ts
 apps/web/media
 apps/web/documents
 apps/web/videos
