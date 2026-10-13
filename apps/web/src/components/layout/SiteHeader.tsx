@@ -13,7 +13,6 @@ import { LanguageSwitcher } from './LanguageSwitcher'
 import { MobileNav } from './MobileNav'
 import { PrimaryNav } from './PrimaryNav'
 import { EnquireButton } from './EnquireButton'
-import { ThemeToggle } from './ThemeToggle'
 
 type Props = {
   locale: Locale
@@ -49,11 +48,6 @@ export function SiteHeader({ locale, t, settings, galleries }: Props) {
               </Link>
             ) : null}
             <LanguageSwitcher current={locale} label={t.language} />
-            <ThemeToggle
-              labels={{ light: t.themeLight, dark: t.themeDark }}
-              compact
-              className="-mr-2"
-            />
           </div>
         </div>
       </div>
@@ -95,10 +89,6 @@ export function SiteHeader({ locale, t, settings, galleries }: Props) {
           <EnquireButton href={enquire} label={t.enquireNow} />
         </div>
 
-        <ThemeToggle
-          labels={{ light: t.themeLight, dark: t.themeDark }}
-          className="ml-auto lg:hidden"
-        />
         <MobileNav
           links={links.map((l) => ({ label: l.label, href: l.href }))}
           searchHref={href(locale, routes.search())}
