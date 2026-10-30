@@ -24,6 +24,22 @@ export type PosterDoc = {
   venueName?: string | null
   ctaLabel?: string | null
   ctaUrl?: string | null
+  designed?: boolean | null
+  brandName?: string | null
+  brandTagline?: string | null
+  greeting?: string | null
+  intro?: string | null
+  highlight?: string | null
+  stats?: { id?: string | null; value?: string | null; label?: string | null }[] | null
+  quoteText?: string | null
+  quoteName?: string | null
+  quoteRole?: string | null
+  featuresTitle?: string | null
+  features?: { id?: string | null; title?: string | null; text?: string | null }[] | null
+  closingLine?: string | null
+  closingScript?: string | null
+  dButtonLabel?: string | null
+  dButtonUrl?: string | null
 }
 
 /** The main picture of a poster, whichever way it was made. */

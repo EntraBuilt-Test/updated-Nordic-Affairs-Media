@@ -8,6 +8,7 @@ import { buildMetadata } from '@/lib/seo'
 import { href, siteUrl } from '@/lib/site'
 import { posterCover, safeLink, type PosterDoc } from '@/lib/posters'
 import { FlipPoster } from '@/components/newsletter/FlipPoster'
+import { PosterDesign } from '@/components/newsletter/PosterDesign'
 import { MediaImage } from '@/components/ui/MediaImage'
 import { ShareLinks } from '@/components/editorial/ShareLinks'
 
@@ -62,6 +63,25 @@ export default async function PosterPage({ params }: Props) {
   const when = poster.eventDate
     ? new Date(poster.eventDate).toLocaleString(locale, { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Stockholm' })
     : null
+
+  const designed = poster.mode !== 'template' && poster.designed !== false && Boolean(poster.intro || poster.stats?.length || poster.features?.length || poster.quoteText)
+
+  if (designed) {
+    return (
+      <article className="container-max pb-20 pt-10 md:pt-16">
+        <Link href={href(locale, '/newsletters')} className="font-ui text-caption font-semibold text-fjord hover:underline">
+          ← {t.navNewsletter}
+        </Link>
+        <h1 className="sr-only">{poster.title}</h1>
+        <div className="mx-auto mt-6 max-w-4xl">
+          <PosterDesign poster={poster} />
+          <div className="mt-8">
+            <ShareLinks url={`${siteUrl}/${locale}/newsletters/${slug}`} title={poster.title} label={t.share} />
+          </div>
+        </div>
+      </article>
+    )
+  }
 
   return (
     <article className="container-max pb-20 pt-10 md:pt-16">

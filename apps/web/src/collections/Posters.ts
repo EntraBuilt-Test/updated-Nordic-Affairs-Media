@@ -123,6 +123,56 @@ export const NewsletterPosters: CollectionConfig = {
       ],
     },
 
+    // ── Designed poster text (AI and manual modes) ───────────────
+    {
+      type: 'collapsible',
+      label: 'Poster design: the words on the poster page',
+      admin: {
+        condition: (data: Record<string, unknown> | undefined) => data?.mode === 'ai' || data?.mode === 'manual',
+        initCollapsed: false,
+      },
+      fields: [
+        { name: 'designed', type: 'checkbox', defaultValue: true, label: 'Show as a designed poster page', admin: { description: 'The website builds the full poster: headline, numbers, quote, boxes and button, with the picture above as the main image. Real text, so nothing is misspelled.' } },
+        { name: 'brandName', type: 'text', defaultValue: 'Nordic Affairs Media', label: 'Name at the top' },
+        { name: 'brandTagline', type: 'text', label: 'Line under the name (optional)' },
+        { name: 'greeting', type: 'text', label: 'Greeting', defaultValue: 'Hi,' },
+        { name: 'intro', type: 'textarea', label: 'Introduction' },
+        { name: 'highlight', type: 'text', label: 'Highlighted words (optional)', admin: { description: 'Shown on a gold marker, for example: from first idea to the final stage.' } },
+        {
+          name: 'stats',
+          type: 'array',
+          label: 'Numbers (up to 4)',
+          maxRows: 4,
+          labels: { singular: 'Number', plural: 'Numbers' },
+          admin: { initCollapsed: true },
+          fields: [
+            { name: 'value', type: 'text', required: true, label: 'Number', admin: { description: 'For example 5,000+ or 85%.' } },
+            { name: 'label', type: 'text', required: true, label: 'What it counts' },
+          ],
+        },
+        { name: 'quoteText', type: 'textarea', label: 'Quote (optional)' },
+        { name: 'quoteName', type: 'text', label: 'Quote: name' },
+        { name: 'quoteRole', type: 'text', label: 'Quote: role and country' },
+        { name: 'featuresTitle', type: 'text', label: 'Title above the boxes', defaultValue: 'What you get' },
+        {
+          name: 'features',
+          type: 'array',
+          label: 'Boxes (up to 4)',
+          maxRows: 4,
+          labels: { singular: 'Box', plural: 'Boxes' },
+          admin: { initCollapsed: true },
+          fields: [
+            { name: 'title', type: 'text', required: true },
+            { name: 'text', type: 'text', label: 'Short text' },
+          ],
+        },
+        { name: 'closingLine', type: 'text', label: 'Closing line', defaultValue: 'Whenever you are ready,' },
+        { name: 'closingScript', type: 'text', label: 'Closing line, second part (slanted)', defaultValue: 'we would be glad to welcome you.' },
+        { name: 'dButtonLabel', type: 'text', label: 'Button text', defaultValue: 'Join the programme' },
+        { name: 'dButtonUrl', type: 'text', label: 'Button link', admin: { description: 'A full web address starting with https:// or a page of this site such as /en/events.' } },
+      ],
+    },
+
     // ── Share and publish ───────────────────────────────────────
     { name: 'published', type: 'checkbox', defaultValue: false, label: 'Show on the website', admin: { position: 'sidebar', description: 'Tick, then Save. Only published posters have a public link.' } },
     { name: 'sharePanel', type: 'ui', admin: { position: 'sidebar', components: { Field: '/components/admin/PosterSharePanel#PosterSharePanel' } } },
