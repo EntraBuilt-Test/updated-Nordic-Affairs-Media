@@ -25,7 +25,8 @@ export const routes = {
   event: (slug: string) => `/events/${slug}`,
   events: () => '/events',
   publication: (slug: string) => `/publications/${slug}`,
-  publications: () => '/publications',
+  // Publications are listed on the Articles page (the /publications address redirects there).
+  publications: () => '/articles#publications',
   search: () => '/search',
   artist: () => '/artist',
 } as const

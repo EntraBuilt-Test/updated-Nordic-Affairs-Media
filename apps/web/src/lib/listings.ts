@@ -1,5 +1,6 @@
 import 'server-only'
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import type { Where } from 'payload'
 import type { Locale } from '@/i18n/config'
 import { getPayloadClient } from './payload'
@@ -65,11 +66,22 @@ export async function listArticles(
     depth: 2,
     page,
     limit,
-    sort: '-publishedAt',
+    sort: ['_order', '-publishedAt'],
     where: { and },
     ...PUBLIC,
   })
 }
+
+/**
+ * The plain Articles list (no filter), kept for two minutes and dropped the moment something is
+ * published (the 'content' tag is purged by the save hooks). Opening the Articles tab then
+ * does not wait for the database.
+ */
+export const listArticlesCached = (locale: Locale, page: number) =>
+  unstable_cache(() => listArticles(locale, {}, page), ['articles-list', locale, String(page)], {
+    tags: ['content'],
+    revalidate: 120,
+  })()
 
 export type EventFilter = {
   city?: string
@@ -103,14 +115,14 @@ export async function listEvents(
     depth: 1,
     page,
     limit: when === 'upcoming' ? PAGE_SIZE : 6,
-    sort: when === 'upcoming' ? 'startsAt' : '-startsAt',
+    sort: when === 'upcoming' ? ['_order', 'startsAt'] : ['_order', '-startsAt'],
     where: { and },
     ...PUBLIC,
   })
 }
 
 /** Filter choices are built from real data, so the form never offers an empty option. */
-export const getEventFilterOptions = cache(async (locale: Locale) => {
+export const getEventFilterOptions = cache((locale: Locale) => unstable_cache(async () => {
   const payload = await getPayloadClient()
   const [venues, categories] = await Promise.all([
     payload.find({
@@ -131,7 +143,7 @@ export const getEventFilterOptions = cache(async (locale: Locale) => {
   ])
   const cities = [...new Set(venues.docs.map((v) => v.city))].sort((a, b) => a.localeCompare(b))
   return { cities, categories: categories.docs.map((c) => ({ slug: c.slug, title: c.title })) }
-})
+}, ['event-filter-options', locale], { revalidate: 60, tags: ['content'] })())
 
 export async function listPublications(
   locale: Locale,
@@ -149,11 +161,19 @@ export async function listPublications(
     depth: 1,
     page,
     limit: PAGE_SIZE,
-    sort: ['-year', '-publishedAt'],
+    sort: ['_order', '-year', '-publishedAt'],
     where: { and },
     ...PUBLIC,
   })
 }
+
+/** Issues for the Articles page, kept for two minutes and refreshed the moment something is published. */
+export const listPublicationsCached = (locale: Locale) =>
+  unstable_cache(
+    () => listPublications(locale, null, 1).then((r) => r.docs).catch(() => []),
+    ['publications-list', locale],
+    { tags: ['content'], revalidate: 120 },
+  )()
 
 export const getPublicationYears = cache(async () => {
   const payload = await getPayloadClient()

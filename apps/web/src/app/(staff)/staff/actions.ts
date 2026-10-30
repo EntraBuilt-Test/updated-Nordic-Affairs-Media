@@ -195,7 +195,7 @@ export async function searchTicketsAction(eventId: string, q: string) {
   const user = await requireStaff('gate', 'admin')
   if (!(await mayScan(eventId, user))) return []
   const r = await internalApi<{
-    tickets: { code: string; holder: string; tier: string; order: string; status: string }[]
+    tickets: { code: string; holder: string; tier: string; seat?: string | null; order: string; status: string }[]
   }>(`/internal/events/${eventId}/search?q=${encodeURIComponent(q)}`)
   return r.ok ? r.data.tickets : []
 }

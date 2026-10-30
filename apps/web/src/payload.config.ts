@@ -1,4 +1,5 @@
 import path from 'path'
+import { reorderEndpoint } from '@/lib/reorder'
 import { fileURLToPath } from 'url'
 import { buildConfig, type CollectionConfig, type GlobalConfig, type Plugin } from 'payload'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
@@ -10,6 +11,12 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Documents } from './collections/Documents'
 import { Videos } from './collections/Videos'
+import { Music } from './collections/Music'
+import { EmailCampaigns, RecipientLists, TrackingLinks } from './collections/Marketing'
+import { EventAds } from './collections/EventAds'
+import { MarketingSettings } from './globals/MarketingSettings'
+import { AdvertisingSettings } from './globals/AdvertisingSettings'
+import { MarketingAutomations } from './globals/MarketingAutomations'
 import { Categories, EventCategories, Tags, Venues } from './collections/Taxonomy'
 import { Authors } from './collections/Authors'
 import { Articles } from './collections/Articles'
@@ -31,6 +38,7 @@ import { relaxCollection, relaxGlobal } from '@/lib/relaxRequired'
 import { ensureOwner } from './lib/ensureOwner'
 import { auditChange, auditDelete, auditGlobal } from './lib/audit'
 import { defaultLocale, localeMeta, locales } from './i18n/config'
+import { allowedOrigins } from './lib/origins'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -73,6 +81,44 @@ const withGlobalAudit = (g: GlobalConfig): GlobalConfig => ({
   hooks: { ...g.hooks, afterChange: [...(g.hooks?.afterChange ?? []), auditGlobal] },
 })
 
+/** A Save button that reacts to the first click (see components/admin/InstantSave). */
+const INSTANT_SAVE = '/components/admin/InstantSave#InstantSave'
+const withInstantSave = (c: CollectionConfig): CollectionConfig => ({
+  ...c,
+  admin: {
+    ...c.admin,
+    components: {
+      ...c.admin?.components,
+      edit: { SaveButton: INSTANT_SAVE, ...c.admin?.components?.edit },
+    },
+  },
+})
+/** A Publish button above every list that can be rearranged by dragging (see components/admin/PublishOrder). */
+const PUBLISH_ORDER = '/components/admin/PublishOrder#PublishOrder'
+const withPublishOrder = (c: CollectionConfig): CollectionConfig =>
+  c.orderable
+    ? {
+        ...c,
+        admin: {
+          ...c.admin,
+          components: {
+            ...c.admin?.components,
+            beforeListTable: [PUBLISH_ORDER, ...(c.admin?.components?.beforeListTable ?? [])],
+          },
+        },
+      }
+    : c
+const withGlobalInstantSave = (g: GlobalConfig): GlobalConfig => ({
+  ...g,
+  admin: {
+    ...g.admin,
+    components: {
+      ...g.admin?.components,
+      elements: { SaveButton: INSTANT_SAVE, ...g.admin?.components?.elements },
+    },
+  },
+})
+
 /**
  * Images and PDFs go to S3-compatible storage (e.g. Cloudflare R2 in the EU) when
  * S3_BUCKET is set; otherwise they are kept on the server's disk (fine locally,
@@ -98,6 +144,8 @@ const plugins: Plugin[] = process.env.S3_BUCKET
           media: publicFiles,
           documents: true,
           videos: publicFiles,
+          // Background music: public too, so every visitor's browser loads it straight from Cloudflare.
+          music: publicFiles,
         },
         bucket: process.env.S3_BUCKET,
         // Vercel refuses request bodies over 4.5 MB, so there the admin uploads photos and
@@ -118,56 +166,28 @@ const plugins: Plugin[] = process.env.S3_BUCKET
     ]
   : []
 
-/**
- * Addresses the browser may sign in from. Payload only accepts the sign-in cookie on
- * requests (every save, upload and button press in the admin and /staff is one) whose
- * Origin is on this list; anything else is treated as signed out, so the person is sent
- * back to the login page again and again. Hosts differ per platform (Vercel serves one
- * site on several addresses: production, per-deployment and branch URLs), so all the
- * known ones are listed. Add a custom domain with ALLOWED_ORIGINS=https://a.com,https://www.a.com
- */
-function allowedOrigins(): string[] {
-  const list = new Set<string>()
-  const add = (raw?: string | null) => {
-    const v = raw?.trim()
-    if (!v) return
-    try {
-      const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`)
-      list.add(u.origin)
-      // The same site with and without "www."
-      if (u.hostname.startsWith('www.')) list.add(`${u.protocol}//${u.hostname.slice(4)}${u.port ? `:${u.port}` : ''}`)
-      else if (u.hostname.split('.').length === 2) list.add(`${u.protocol}//www.${u.hostname}${u.port ? `:${u.port}` : ''}`)
-    } catch {
-      // ignore anything that is not an address
-    }
-  }
-  add(process.env.NEXT_PUBLIC_SITE_URL)
-  add(process.env.VERCEL_PROJECT_PRODUCTION_URL)
-  add(process.env.VERCEL_URL)
-  add(process.env.VERCEL_BRANCH_URL)
-  add(process.env.RENDER_EXTERNAL_URL)
-  for (const o of (process.env.ALLOWED_ORIGINS ?? '').split(',')) add(o)
-  if (process.env.NODE_ENV !== 'production') add('http://localhost:3000')
-  return [...list]
-}
-
 export default buildConfig({
   csrf: allowedOrigins(),
   cors: allowedOrigins(),
-  serverURL:
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
-    process.env.RENDER_EXTERNAL_URL,
-  secret:
-    process.env.PAYLOAD_SECRET || 'nordic-affairs-media-payload-secret-at-least-32-chars-long-build-fallback',
+  // No serverURL on purpose: the admin then calls the API on whatever address it is opened on
+  // (both Vercel addresses work). With it set, the admin on the second address sent every
+  // request to the first one, the sign-in cookie was not sent, and Save ended in "Failed to fetch".
+  secret: requireEnv('PAYLOAD_SECRET'),
   db: mongooseAdapter({
-    url: process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/dummy-build-db',
+    url: requireEnv('DATABASE_URI'),
+    // Free MongoDB Atlas allows ~500 connections. Every Vercel/Render instance opens its own
+    // pool, so keep each pool small and close idle connections quickly. Without this the
+    // limit is hit and pages that read the database fail with "server-side exception".
+    connectOptions: { maxPoolSize: process.env.VERCEL ? 2 : 3, minPoolSize: 0, maxConnecting: 2, maxIdleTimeMS: 10_000, serverSelectionTimeoutMS: 10_000, socketTimeoutMS: 30_000, retryReads: true, retryWrites: true },
   }),
   editor: lexicalEditor(),
   sharp,
   plugins,
   admin: {
     user: Users.slug,
+    // Events happen in Sweden: every date/time typed in the admin is Swedish time (Europe/Stockholm),
+    // wherever the editor sits, and the website shows exactly that value.
+    timezones: { defaultTimezone: 'Europe/Stockholm', supportedTimezones: [{ label: 'Sweden (Stockholm)', value: 'Europe/Stockholm' }] },
     meta: {
       titleSuffix: ' — Nordic Affairs Media',
       icons: [{ rel: 'icon', type: 'image/png', url: '/icons/favicon-48.png' }],
@@ -178,7 +198,7 @@ export default buildConfig({
     importMap: { baseDir: path.resolve(dirname) },
     components: {
       // Eye button on every password field in the content manager.
-      providers: ['/components/admin/PasswordReveal#PasswordReveal'],
+      providers: ['/components/admin/PasswordReveal#PasswordReveal', '/components/admin/BigUploadHandler#BigUploadHandler'],
       graphics: {
         Logo: '/components/admin/Brand#Logo',
         Icon: '/components/admin/Brand#Icon',
@@ -226,6 +246,7 @@ export default buildConfig({
     Media,
     Videos,
     Documents,
+    Music,
     Events,
     PromoCodes,
     Venues,
@@ -233,24 +254,32 @@ export default buildConfig({
     EventCategories,
     Enquiries,
     Subscribers,
+    EmailCampaigns,
+    RecipientLists,
+    TrackingLinks,
+    EventAds,
     Users,
     AuditLog,
     Redirects,
   ]
     .map(relaxCollection)
     .map(withAudit)
+    .map(withInstantSave)
+    .map(withPublishOrder)
     // Sign-in log and visitor counter: written by the system, so not audited themselves.
     .concat([LoginEvents, PageViews]),
-  globals: [Homepage, Navigation, AboutPage, ArtistProfile, SiteSettings, PlatformSettings]
+  globals: [Homepage, Navigation, AboutPage, ArtistProfile, SiteSettings, PlatformSettings, MarketingSettings, MarketingAutomations, AdvertisingSettings]
     .map(relaxGlobal)
-    .map(withGlobalAudit),
-  // Large uploads (high-resolution photos, videos up to 200 MB): files are written to a
+    .map(withGlobalAudit)
+    .map(withGlobalInstantSave),
+  // Drag-and-drop ordering that never fails with "Failed to reorder" (replaces Payload's own step; see lib/reorder.ts).
+  endpoints: [reorderEndpoint],
+  // Large uploads (high-resolution photos, videos up to 5 GB): files are written to a
   // temporary file instead of being held in memory, so the small server does not run out.
   upload: {
-    // 200 MB per file (videos, audio, documents). The server's own default request cap is
-    // only 50 MB, which silently blocked bigger videos, so it is raised to match.
-    limits: { fileSize: 200 * 1024 * 1024 },
-    requestSizeLimit: 210 * 1024 * 1024,
+    // No size limit in the form. Big files go to Cloudflare in pieces (BigUploadHandler); the ceiling is Cloudflare's own 5 TB per file.
+    limits: { fileSize: Infinity },
+    requestSizeLimit: 2100 * 1024 * 1024,
     useTempFiles: true,
     tempFileDir: '/tmp',
   },

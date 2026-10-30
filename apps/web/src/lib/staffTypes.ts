@@ -33,6 +33,7 @@ export type Attendee = {
   name: string
   email: string
   tier: string
+  seat?: string | null
   status: 'valid' | 'checked_in' | 'cancelled'
   checkedInAt: string | null
   order: string
@@ -44,9 +45,12 @@ export type CheckinResult = {
   result: 'ok' | 'already' | 'cancelled' | 'wrong_event' | 'not_found' | 'error'
   holder?: string
   tier?: string
+  seat?: string | null
   order?: string
   event?: string
   checkedInAt?: string | null
+  code?: string
+  demo?: boolean
 }
 
 type ReportRow = { orders: number; tickets: number; gross: number; refunded: number; vat: number }

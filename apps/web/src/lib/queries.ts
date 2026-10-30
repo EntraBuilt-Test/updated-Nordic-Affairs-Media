@@ -1,5 +1,6 @@
 import 'server-only'
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import type { Where } from 'payload'
 import type { Locale } from '@/i18n/config'
 import type { Article, Event, Media, Publication } from '@/payload-types'
@@ -16,7 +17,10 @@ const PUBLIC = { overrideAccess: false, draft: false } as const
 
 const published: Where = { _status: { equals: 'published' } }
 
-export const getSiteChrome = cache(async (locale: Locale) => {
+/** Database reads kept for a minute and dropped the instant an editor publishes (tag "content"). */
+const CACHE = { revalidate: 60, tags: ['content'] }
+
+export const getSiteChrome = cache((locale: Locale) => unstable_cache(async () => {
   const payload = await getPayloadClient()
   const [navigation, settings] = await Promise.all([
     payload.findGlobal({ slug: 'navigation', locale, depth: 0, ...PUBLIC }),
@@ -24,7 +28,26 @@ export const getSiteChrome = cache(async (locale: Locale) => {
   ])
   // Fixed wording (footer text, key figures…) in the reader's language.
   return { navigation, settings: localizedSettings(settings, locale) }
-})
+}, ['site-chrome', locale], CACHE)())
+
+/**
+ * The website's background music: the track the admin ticked "Play on the website" in Background music
+ * (the newest one if several are ticked). null = no music: the player and its button are not shown.
+ */
+export const getBackgroundMusic = cache(() => unstable_cache(async (): Promise<{ url: string; version: string } | null> => {
+  const payload = await getPayloadClient()
+  const result = await payload.find({
+    collection: 'music',
+    where: { active: { equals: true } },
+    sort: '-updatedAt',
+    limit: 1,
+    depth: 0,
+    ...PUBLIC,
+  })
+  const track = result.docs[0]
+  if (!track?.url) return null
+  return { url: track.url, version: String(track.updatedAt ?? '') }
+}, ['background-music'], CACHE)())
 
 export const getLatestArticles = cache(
   async (locale: Locale, limit = 8, excludeIds: string[] = []): Promise<Article[]> => {
@@ -37,7 +60,7 @@ export const getLatestArticles = cache(
       locale,
       depth: 2,
       limit,
-      sort: '-publishedAt',
+      sort: ['_order', '-publishedAt'],
       where,
       ...PUBLIC,
     })
@@ -58,7 +81,7 @@ export const getArticlesByCategory = cache(
       locale,
       depth: 2,
       limit,
-      sort: '-publishedAt',
+      sort: ['_order', '-publishedAt'],
       where: {
         and: [published, { category: { equals: categoryId } }, { id: { not_in: excludeIds } }],
       },
@@ -90,7 +113,7 @@ export const getUpcomingEvents = cache(async (locale: Locale, limit = 4): Promis
     locale,
     depth: 1,
     limit,
-    sort: 'startsAt',
+    sort: ['_order', 'startsAt'],
     where: {
       and: [
         published,
@@ -103,7 +126,7 @@ export const getUpcomingEvents = cache(async (locale: Locale, limit = 4): Promis
   return result.docs
 })
 
-export const getEventBySlug = cache(async (locale: Locale, slug: string): Promise<Event | null> => {
+export const getEventBySlug = cache((locale: Locale, slug: string): Promise<Event | null> => unstable_cache(async (): Promise<Event | null> => {
   const payload = await getPayloadClient()
   const result = await payload.find({
     collection: 'events',
@@ -114,7 +137,7 @@ export const getEventBySlug = cache(async (locale: Locale, slug: string): Promis
     ...PUBLIC,
   })
   return result.docs[0] ?? null
-})
+}, ['event-by-slug', locale, slug], CACHE)())
 
 export const getLatestPublication = cache(async (locale: Locale): Promise<Publication | null> => {
   const payload = await getPayloadClient()
@@ -123,7 +146,7 @@ export const getLatestPublication = cache(async (locale: Locale): Promise<Public
     locale,
     depth: 1,
     limit: 1,
-    sort: ['-year', '-publishedAt'],
+    sort: ['_order', '-year', '-publishedAt'],
     where: published,
     ...PUBLIC,
   })
@@ -265,7 +288,7 @@ export const getLatestGalleries = cache(async (locale: Locale, limit = 12) => {
     locale,
     depth: 1,
     limit,
-    sort: '-date',
+    sort: ['_order', '-date'],
     where: published,
     select: { title: true, slug: true, date: true, cover: true, photoCount: true },
     ...PUBLIC,
@@ -281,7 +304,7 @@ export const getGalleryMenu = cache(async (locale: Locale) => {
     locale,
     depth: 0,
     limit: 200,
-    sort: '-date',
+    sort: ['_order', '-date'],
     where: published,
     select: { title: true, slug: true },
     ...PUBLIC,
@@ -296,7 +319,7 @@ export const getPublicVideos = cache(async (limit = 60) => {
     collection: 'videos',
     depth: 1,
     limit,
-    sort: '-createdAt',
+    sort: ['_order', '-createdAt'],
     where: { showOnWebsite: { not_equals: false } },
     ...PUBLIC,
   })
@@ -309,9 +332,9 @@ export const getPublicPhotos = cache(async (limit = 60) => {
     collection: 'media',
     depth: 0,
     limit,
-    sort: '-createdAt',
+    sort: ['_order', '-createdAt'],
     // Opt-in: only pictures ticked "Show on the Media page" appear there.
-    where: { showOnMediaPage: { equals: true } },
+    where: { and: [{ showOnMediaPage: { equals: true } }, { isPlaceholder: { not_equals: true } }] },
     ...PUBLIC,
   })
   return r.docs
@@ -323,7 +346,7 @@ export const getPublicDocuments = cache(async (limit = 60) => {
     collection: 'documents',
     depth: 0,
     limit,
-    sort: '-createdAt',
+    sort: ['_order', '-createdAt'],
     where: { showOnWebsite: { not_equals: false } },
     ...PUBLIC,
   })

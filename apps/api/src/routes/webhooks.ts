@@ -2,7 +2,7 @@ import express, { Router } from 'express'
 import type Stripe from 'stripe'
 import { releasePromoUse } from '../catalog.js'
 import { env } from '../env.js'
-import { fulfilOrder } from '../fulfil.js'
+import { intentId, orderIdOf, settleIntent, settleSession } from '../settle.js'
 import { orders } from '../orders.js'
 import { cancelOrderTickets } from '../cancellations.js'
 import { releaseOrderHolds } from '../stock.js'
@@ -10,13 +10,6 @@ import { stripe } from '../stripe.js'
 
 export const webhookRouter = Router()
 
-const orderIdOf = (obj: {
-  metadata?: Stripe.Metadata | null
-  client_reference_id?: string | null
-}) => obj.metadata?.orderId ?? obj.client_reference_id ?? null
-
-const intentId = (v: string | Stripe.PaymentIntent | null) =>
-  typeof v === 'string' ? v : (v?.id ?? undefined)
 
 /**
  * Stripe → us. Every message is verified with the webhook signing secret, so nobody
@@ -24,7 +17,8 @@ const intentId = (v: string | Stripe.PaymentIntent | null) =>
  *
  * In the Stripe dashboard, send these events to https://<api>/webhooks/stripe:
  * checkout.session.completed, checkout.session.async_payment_succeeded,
- * checkout.session.async_payment_failed, checkout.session.expired, charge.refunded
+ * checkout.session.async_payment_failed, checkout.session.expired, charge.refunded,
+ * payment_intent.succeeded (Google Pay / Apple Pay on the website)
  */
 webhookRouter.post(
   '/webhooks/stripe',
@@ -47,11 +41,11 @@ webhookRouter.post(
     switch (event.type) {
       case 'checkout.session.completed':
       case 'checkout.session.async_payment_succeeded': {
-        const session = event.data.object
-        const orderId = orderIdOf(session)
-        // Some methods (e.g. bank-based) confirm later; wait for async_payment_succeeded.
-        if (orderId && session.payment_status === 'paid')
-          await fulfilOrder(orderId, intentId(session.payment_intent))
+        await settleSession(event.data.object)
+        break
+      }
+      case 'payment_intent.succeeded': {
+        await settleIntent(event.data.object)
         break
       }
       case 'checkout.session.expired':

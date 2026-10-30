@@ -1,9 +1,9 @@
 import 'server-only'
 import { cache } from 'react'
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 import config from '@payload-config'
 
-import { settings as settingsDefaults, aboutDefaults } from '@/lib/wordpress/content'
+import { settings as settingsDefaults, aboutDefaults, pressMentions as defaultPressMentions } from '@/lib/wordpress/content'
 
 const MOCK_EVENTS = [
   {
@@ -192,16 +192,18 @@ function createMockPayload(): any {
           whatsapp: '+46 70 123 4567',
           accreditation: 'Swedish Press Association Accredited',
           stats: [
-            { id: '1', value: '450+', label: 'Diplomatic Summits' },
-            { id: '2', value: '88+', label: 'Royal State Banquets' },
-            { id: '3', value: '1.2M+', label: 'Archival Frames' },
-            { id: '4', value: '34', label: 'Bilateral Accords' },
+            { id: '1', value: '10+', label: 'Years of Excellence' },
+            { id: '2', value: '500+', label: 'Global Events Covered' },
+            { id: '3', value: '50+', label: 'International Assignments' },
+            { id: '4', value: '100+', label: 'Trusted Partnerships' },
+            { id: '5', value: '24/7', label: 'Media Coverage Support' },
           ],
-          pressMentions: [
-            { id: '1', outlet: 'Svenska Dagbladet', title: 'The Visual Chroniclers of Nordic Geopolitics', year: '2025', url: '#' },
-            { id: '2', outlet: 'Dagens Nyheter', title: 'Behind the Lens at the Nordic-Baltic Eight', year: '2024', url: '#' },
-            { id: '3', outlet: 'The Diplomat', title: 'Statecraft Preserved in Silver Gelatin and 8K', year: '2024', url: '#' },
-          ],
+          pressMentions: defaultPressMentions.map((p: any, i: number) => ({
+            id: String(i + 1),
+            outlet: p.outlet,
+            url: p.url,
+            logo: { id: String(i + 1), url: p.logo, alt: p.outlet },
+          })),
         }
       }
       if (slug === 'navigation') {
@@ -294,14 +296,26 @@ function createMockPayload(): any {
 }
 
 /** One Payload client per request (React `cache`), reused across server components. Falls back to mock data if MongoDB is offline for pure frontend development. */
-export const getPayloadClient = cache(async () => {
+export const getPayloadClient = cache(async (): Promise<Payload> => {
   if (process.env.SKIP_DB === 'true' || !process.env.DATABASE_URI || process.env.DATABASE_URI.includes('dummy')) {
-    return createMockPayload()
+    return createMockPayload() as unknown as Payload
   }
   try {
     return await getPayload({ config })
-  } catch {
-    return createMockPayload()
+  } catch (firstError) {
+    // The database is sometimes slow to answer for a moment (cold start, busy cluster): try once more.
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      return await getPayload({ config })
+    } catch (error) {
+      // On the live site never show the invented sample events: fail instead. Next.js then keeps
+      // serving the last good copy of the page instead of saving fake content for visitors.
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+        console.error('[payload] database connection failed', firstError, error)
+        throw error
+      }
+      return createMockPayload() as unknown as Payload
+    }
   }
 })
 

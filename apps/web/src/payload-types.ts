@@ -12,54 +12,7 @@
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "supportedTimezones".
  */
-export type SupportedTimezones =
-  | 'Pacific/Midway'
-  | 'Pacific/Niue'
-  | 'Pacific/Honolulu'
-  | 'Pacific/Rarotonga'
-  | 'America/Anchorage'
-  | 'Pacific/Gambier'
-  | 'America/Los_Angeles'
-  | 'America/Tijuana'
-  | 'America/Denver'
-  | 'America/Phoenix'
-  | 'America/Chicago'
-  | 'America/Guatemala'
-  | 'America/New_York'
-  | 'America/Bogota'
-  | 'America/Caracas'
-  | 'America/Santiago'
-  | 'America/Buenos_Aires'
-  | 'America/Sao_Paulo'
-  | 'Atlantic/South_Georgia'
-  | 'Atlantic/Azores'
-  | 'Atlantic/Cape_Verde'
-  | 'Europe/London'
-  | 'Europe/Berlin'
-  | 'Africa/Lagos'
-  | 'Europe/Athens'
-  | 'Africa/Cairo'
-  | 'Europe/Moscow'
-  | 'Asia/Riyadh'
-  | 'Asia/Dubai'
-  | 'Asia/Baku'
-  | 'Asia/Karachi'
-  | 'Asia/Tashkent'
-  | 'Asia/Calcutta'
-  | 'Asia/Dhaka'
-  | 'Asia/Almaty'
-  | 'Asia/Jakarta'
-  | 'Asia/Bangkok'
-  | 'Asia/Shanghai'
-  | 'Asia/Singapore'
-  | 'Asia/Tokyo'
-  | 'Asia/Seoul'
-  | 'Australia/Brisbane'
-  | 'Australia/Sydney'
-  | 'Pacific/Guam'
-  | 'Pacific/Noumea'
-  | 'Pacific/Auckland'
-  | 'Pacific/Fiji';
+export type SupportedTimezones = 'Europe/Stockholm';
 
 export interface Config {
   auth: {
@@ -77,6 +30,7 @@ export interface Config {
     media: Media;
     videos: Video;
     documents: Document;
+    music: Music;
     events: Event;
     'promo-codes': PromoCode;
     venues: Venue;
@@ -84,6 +38,10 @@ export interface Config {
     'event-categories': EventCategory;
     enquiries: Enquiry;
     subscribers: Subscriber;
+    'email-campaigns': EmailCampaign;
+    'recipient-lists': RecipientList;
+    'tracking-links': TrackingLink;
+    'event-ads': EventAd;
     users: User;
     'audit-log': AuditLog;
     redirects: Redirect;
@@ -107,6 +65,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
+    music: MusicSelect<false> | MusicSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     'promo-codes': PromoCodesSelect<false> | PromoCodesSelect<true>;
     venues: VenuesSelect<false> | VenuesSelect<true>;
@@ -114,6 +73,10 @@ export interface Config {
     'event-categories': EventCategoriesSelect<false> | EventCategoriesSelect<true>;
     enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    'email-campaigns': EmailCampaignsSelect<false> | EmailCampaignsSelect<true>;
+    'recipient-lists': RecipientListsSelect<false> | RecipientListsSelect<true>;
+    'tracking-links': TrackingLinksSelect<false> | TrackingLinksSelect<true>;
+    'event-ads': EventAdsSelect<false> | EventAdsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     'audit-log': AuditLogSelect<false> | AuditLogSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
@@ -137,6 +100,9 @@ export interface Config {
     'artist-profile': ArtistProfileData;
     'site-settings': SiteSettingsData;
     'platform-settings': PlatformSettingsData;
+    'marketing-settings': MarketingSetting;
+    'marketing-automations': MarketingAutomation;
+    'advertising-settings': AdvertisingSetting;
   };
   globalsSelect: {
     homepage: HomepageSelect<false> | HomepageSelect<true>;
@@ -145,6 +111,9 @@ export interface Config {
     'artist-profile': ArtistProfileSelect<false> | ArtistProfileSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'platform-settings': PlatformSettingsSelect<false> | PlatformSettingsSelect<true>;
+    'marketing-settings': MarketingSettingsSelect<false> | MarketingSettingsSelect<true>;
+    'marketing-automations': MarketingAutomationsSelect<false> | MarketingAutomationsSelect<true>;
+    'advertising-settings': AdvertisingSettingsSelect<false> | AdvertisingSettingsSelect<true>;
   };
   locale: 'en' | 'sv' | 'ta' | 'ml';
   widgets: {
@@ -346,6 +315,10 @@ export interface Gallery {
    * Old WordPress address (path only). Set by the import.
    */
   legacyUrl?: string | null;
+  /**
+   * Pick several photos from the library (or upload them with the box above). On Save they move to the end of the photo list below.
+   */
+  addPhotos?: (string | Media)[] | null;
   photos?:
     | {
         image: string | Media;
@@ -396,6 +369,24 @@ export interface Event {
     };
     [k: string]: unknown;
   } | null;
+  /**
+   * Where the event takes place. Shown on the My Booking map and the event page. Overrides the venue’s location if both are set.
+   */
+  location?: {
+    /**
+     * Optional, e.g. Stora Salen, Stockholm Konserthus.
+     */
+    placeName?: string | null;
+    /**
+     * Street address, shown to buyers.
+     */
+    address?: string | null;
+    /**
+     * Set by the map below, or type it.
+     */
+    latitude?: number | null;
+    longitude?: number | null;
+  };
   lineup?:
     | {
         name: string;
@@ -410,6 +401,10 @@ export interface Event {
   vatRate?: number | null;
   maxPerOrder?: number | null;
   /**
+   * Reserved seats needs a venue with a seating plan (Venues → Seating plan) and every ticket tier below listing its section codes. The ticket quantity is then taken from the seats.
+   */
+  seating?: ('general' | 'reserved') | null;
+  /**
    * e.g. Regular, VIP, Family, Child — or a venue zone such as Balcony.
    */
   tiers?:
@@ -420,6 +415,10 @@ export interface Event {
         tierId: string;
         name: string;
         description?: string | null;
+        /**
+         * Reserved seats only: the section codes of the venue plan this price applies to, e.g. A, B. Each section can belong to one tier.
+         */
+        sections?: string | null;
         /**
          * Incl. VAT
          */
@@ -448,10 +447,15 @@ export interface Event {
    */
   slug: string;
   /**
-   * Leave empty while the date is not confirmed: the event shows “Date to be announced” and tickets open once a date is set.
+   * Swedish time (Europe/Stockholm) — the website shows exactly this value. Leave empty while the date is not confirmed: the event shows “Date to be announced” and tickets open once a date is set.
    */
   startsAt?: string | null;
+  startsAt_tz: SupportedTimezones;
+  /**
+   * Swedish time. Tickets stay on sale until this time. If empty, until midnight of the start day.
+   */
   endsAt?: string | null;
+  endsAt_tz: SupportedTimezones;
   /**
    * Can be added later.
    */
@@ -469,6 +473,9 @@ export interface Event {
    * Who may scan tickets at the door for this event (PRD A-07).
    */
   gateStaff?: (string | User)[] | null;
+  /**
+   * Shown to visitors exactly as chosen. The event appears in My Booking only after you press Publish changes. The Get tickets button needs: On sale, a future date, and at least one ticket type that is on sale.
+   */
   salesStatus?: ('announced' | 'onSale' | 'soldOut' | 'cancelled') | null;
   /**
    * Development placeholder — never publish to the live site with this ticked.
@@ -493,7 +500,51 @@ export interface Venue {
    * Link to Google/Apple Maps.
    */
   mapUrl?: string | null;
+  /**
+   * Optional. Real venue latitude, e.g. 59.3293. Needed for the map view; events without it are listed but not pinned.
+   */
+  latitude?: number | null;
+  /**
+   * Optional. Real venue longitude, e.g. 18.0686.
+   */
+  longitude?: number | null;
   capacity?: number | null;
+  /**
+   * Only for venues with numbered seats. Add sections (e.g. Stalls, Balcony), each made of rows × seats. Then set an event at this venue to “Reserved seats” (event → Tickets tab) and give each ticket tier the section codes it sells. Buyers then pick exact seats on a map. Leave empty for standing or general-admission venues.
+   */
+  seatingPlan?: {
+    /**
+     * Shown above the seats, e.g. Stage or Screen.
+     */
+    stageLabel?: string | null;
+    sections?:
+      | {
+          /**
+           * Short code, letters/digits, e.g. A or BAL. Tickets refer to it.
+           */
+          code: string;
+          /**
+           * Shown to buyers, e.g. Stalls.
+           */
+          name: string;
+          rows: number;
+          seatsPerRow: number;
+          /**
+           * Letter of the first row (front). Rows continue A, B, C …
+           */
+          firstRow?: string | null;
+          /**
+           * Optional. Seat numbers after which a walkway is drawn, e.g. 6, 18.
+           */
+          aisleAfter?: string | null;
+          /**
+           * Optional. Seats that do not exist or are not for sale, row letter + number, e.g. A1, A2, F7.
+           */
+          unavailable?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
   accessInfo?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -640,6 +691,8 @@ export interface Article {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Bulk upload bar above the list: any size, any number. Create New: one file, no size limit.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "videos".
  */
@@ -800,6 +853,8 @@ export interface Publication {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Bulk upload bar above the list: any size, any number. Create New: for files up to a few hundred MB. Bigger files: use the Bulk upload bar.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "documents".
  */
@@ -818,6 +873,34 @@ export interface Document {
    * Show a download button to readers.
    */
   allowDownload?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * The music that plays on the website. Create New: choose an audio file (MP3, M4A, WAV...) and Save, and it plays on the website at once. To change the music, add a new track or tick another one. To remove it, delete the track.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "music".
+ */
+export interface Music {
+  id: string;
+  /**
+   * Optional name for you. The file name is used if left empty.
+   */
+  title?: string | null;
+  /**
+   * Ticked: this track is the background music of the website. Only one track plays, so ticking it unticks the others. Untick it (with no other track ticked) to switch the music off.
+   */
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -861,6 +944,18 @@ export interface PromoCode {
    */
   maxUses?: number | null;
   timesUsed?: number | null;
+  /**
+   * Optional. Smallest ticket total (event currency) the code works for.
+   */
+  minSpend?: number | null;
+  /**
+   * Optional. Caps the discount (event currency), useful for percent codes.
+   */
+  maxDiscount?: number | null;
+  /**
+   * Optional. How many times one buyer (email) may use the code.
+   */
+  perEmailLimit?: number | null;
   active?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -900,6 +995,192 @@ export interface Subscriber {
   token?: string | null;
   consentAt?: string | null;
   confirmedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Write an email, pick who gets it, send a test to yourself, then send it.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-campaigns".
+ */
+export interface EmailCampaign {
+  id: string;
+  /**
+   * Only you see this name.
+   */
+  name: string;
+  channel: 'email' | 'sms';
+  /**
+   * Required for email.
+   */
+  subject?: string | null;
+  /**
+   * The short grey line after the subject in the inbox (optional).
+   */
+  preheader?: string | null;
+  /**
+   * Plain text. A blank line starts a new paragraph. {{firstName}} becomes the reader's first name. For text messages keep it short (160 characters is one message); the link and "Reply STOP to unsubscribe" are added for you.
+   */
+  body: string;
+  /**
+   * e.g. Buy tickets
+   */
+  ctaLabel?: string | null;
+  /**
+   * Full address. Leave empty to use a tracking link below.
+   */
+  ctaUrl?: string | null;
+  /**
+   * The button goes through this tracking link, so you can count the clicks.
+   */
+  trackingLink?: (string | null) | TrackingLink;
+  /**
+   * People who confirmed on the website and did not unsubscribe.
+   */
+  sendToSubscribers?: boolean | null;
+  /**
+   * Everyone who ticked the marketing box at checkout and bought tickets.
+   */
+  sendToCustomers?: boolean | null;
+  /**
+   * Started an order, said yes to marketing and did not pay. Not those who already bought for that event.
+   */
+  sendToAbandoned?: boolean | null;
+  lists?: (string | RecipientList)[] | null;
+  status?: ('draft' | 'sending' | 'sent') | null;
+  sentAt?: string | null;
+  recipientCount?: number | null;
+  sentCount?: number | null;
+  failedCount?: number | null;
+  clicks?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Make one link per place you share it (Instagram, the poster, the newsletter) and see which one gets clicks.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tracking-links".
+ */
+export interface TrackingLink {
+  id: string;
+  /**
+   * e.g. Instagram bio, Poster QR, Newsletter
+   */
+  name: string;
+  /**
+   * The end of the short link. Made from the name.
+   */
+  slug: string;
+  /**
+   * Opens this event page. Or fill in the address below.
+   */
+  event?: (string | null) | Event;
+  /**
+   * Full address (https://...). Used when no event is picked.
+   */
+  destination?: string | null;
+  /**
+   * Share this link.
+   */
+  shortLink?: string | null;
+  clicks?: number | null;
+  lastClickAt?: string | null;
+  /**
+   * Paid orders from people who came through this link (last 30 days before they bought).
+   */
+  orders?: number | null;
+  /**
+   * Total of those orders.
+   */
+  revenue?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * People who agreed to get marketing email. Paste their emails, one per line (email, first name, last name, phone). Everyone gets an unsubscribe link.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recipient-lists".
+ */
+export interface RecipientList {
+  id: string;
+  name: string;
+  /**
+   * Required before you can import contacts. Imported contacts are saved with this consent.
+   */
+  consentConfirmed?: boolean | null;
+  /**
+   * One person per line: email, first name, last name, phone (with +46…, only needed for text messages). Existing emails are updated. Saved, then this box is emptied.
+   */
+  importCsv?: string | null;
+  contactCount?: number | null;
+  contacts?:
+    | {
+        email: string;
+        firstName?: string | null;
+        lastName?: string | null;
+        /**
+         * With country code, e.g. +46701234567. Only for text messages.
+         */
+        phone?: string | null;
+        unsubscribed?: boolean | null;
+        token?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Reach more guests with ads on Facebook and Instagram. Pick an event and a budget. Connect your Facebook Page first (Advertising: Facebook connection).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-ads".
+ */
+export interface EventAd {
+  id: string;
+  event: string | Event;
+  /**
+   * Only you see this. Made from the event if empty.
+   */
+  name?: string | null;
+  /**
+   * Bold line on the ad (40 letters). Empty = the event title.
+   */
+  headline?: string | null;
+  /**
+   * The text above the picture. Mention the date and "Tickets are out now".
+   */
+  message: string;
+  /**
+   * In the currency of your ad account (e.g. SEK per day). Meta has a minimum.
+   */
+  dailyBudget: number;
+  startDate: string;
+  /**
+   * Usually the day before the event.
+   */
+  endDate: string;
+  /**
+   * Two-letter country codes, separated by comma. SE = Sweden.
+   */
+  countries?: string | null;
+  ageMin?: number | null;
+  ageMax?: number | null;
+  status?: ('draft' | 'active' | 'paused' | 'error') | null;
+  /**
+   * What Meta says (e.g. ACTIVE, IN_REVIEW, WITH_ISSUES).
+   */
+  metaStatus?: string | null;
+  errorMessage?: string | null;
+  impressions?: number | null;
+  reach?: number | null;
+  clicks?: number | null;
+  spend?: number | null;
+  metaCampaignId?: string | null;
+  metaAdId?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1121,6 +1402,10 @@ export interface PayloadLockedDocument {
         value: string | Document;
       } | null)
     | ({
+        relationTo: 'music';
+        value: string | Music;
+      } | null)
+    | ({
         relationTo: 'events';
         value: string | Event;
       } | null)
@@ -1147,6 +1432,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscribers';
         value: string | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'email-campaigns';
+        value: string | EmailCampaign;
+      } | null)
+    | ({
+        relationTo: 'recipient-lists';
+        value: string | RecipientList;
+      } | null)
+    | ({
+        relationTo: 'tracking-links';
+        value: string | TrackingLink;
+      } | null)
+    | ({
+        relationTo: 'event-ads';
+        value: string | EventAd;
       } | null)
     | ({
         relationTo: 'users';
@@ -1249,6 +1550,7 @@ export interface GalleriesSelect<T extends boolean = true> {
   cover?: T;
   photoCount?: T;
   legacyUrl?: T;
+  addPhotos?: T;
   photos?:
     | T
     | {
@@ -1497,6 +1799,25 @@ export interface DocumentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "music_select".
+ */
+export interface MusicSelect<T extends boolean = true> {
+  title?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events_select".
  */
 export interface EventsSelect<T extends boolean = true> {
@@ -1506,6 +1827,14 @@ export interface EventsSelect<T extends boolean = true> {
   poster?: T;
   trailerUrl?: T;
   description?: T;
+  location?:
+    | T
+    | {
+        placeName?: T;
+        address?: T;
+        latitude?: T;
+        longitude?: T;
+      };
   lineup?:
     | T
     | {
@@ -1516,12 +1845,14 @@ export interface EventsSelect<T extends boolean = true> {
   currency?: T;
   vatRate?: T;
   maxPerOrder?: T;
+  seating?: T;
   tiers?:
     | T
     | {
         tierId?: T;
         name?: T;
         description?: T;
+        sections?: T;
         price?: T;
         quantity?: T;
         salesStart?: T;
@@ -1539,7 +1870,9 @@ export interface EventsSelect<T extends boolean = true> {
       };
   slug?: T;
   startsAt?: T;
+  startsAt_tz?: T;
   endsAt?: T;
+  endsAt_tz?: T;
   venue?: T;
   category?: T;
   eventLanguage?: T;
@@ -1566,6 +1899,9 @@ export interface PromoCodesSelect<T extends boolean = true> {
   validUntil?: T;
   maxUses?: T;
   timesUsed?: T;
+  minSpend?: T;
+  maxDiscount?: T;
+  perEmailLimit?: T;
   active?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1581,7 +1917,26 @@ export interface VenuesSelect<T extends boolean = true> {
   city?: T;
   country?: T;
   mapUrl?: T;
+  latitude?: T;
+  longitude?: T;
   capacity?: T;
+  seatingPlan?:
+    | T
+    | {
+        stageLabel?: T;
+        sections?:
+          | T
+          | {
+              code?: T;
+              name?: T;
+              rows?: T;
+              seatsPerRow?: T;
+              firstRow?: T;
+              aisleAfter?: T;
+              unavailable?: T;
+              id?: T;
+            };
+      };
   accessInfo?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1641,6 +1996,99 @@ export interface SubscribersSelect<T extends boolean = true> {
   token?: T;
   consentAt?: T;
   confirmedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-campaigns_select".
+ */
+export interface EmailCampaignsSelect<T extends boolean = true> {
+  name?: T;
+  channel?: T;
+  subject?: T;
+  preheader?: T;
+  body?: T;
+  ctaLabel?: T;
+  ctaUrl?: T;
+  trackingLink?: T;
+  sendToSubscribers?: T;
+  sendToCustomers?: T;
+  sendToAbandoned?: T;
+  lists?: T;
+  status?: T;
+  sentAt?: T;
+  recipientCount?: T;
+  sentCount?: T;
+  failedCount?: T;
+  clicks?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recipient-lists_select".
+ */
+export interface RecipientListsSelect<T extends boolean = true> {
+  name?: T;
+  consentConfirmed?: T;
+  importCsv?: T;
+  contactCount?: T;
+  contacts?:
+    | T
+    | {
+        email?: T;
+        firstName?: T;
+        lastName?: T;
+        phone?: T;
+        unsubscribed?: T;
+        token?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tracking-links_select".
+ */
+export interface TrackingLinksSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  event?: T;
+  destination?: T;
+  shortLink?: T;
+  clicks?: T;
+  lastClickAt?: T;
+  orders?: T;
+  revenue?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-ads_select".
+ */
+export interface EventAdsSelect<T extends boolean = true> {
+  event?: T;
+  name?: T;
+  headline?: T;
+  message?: T;
+  dailyBudget?: T;
+  startDate?: T;
+  endDate?: T;
+  countries?: T;
+  ageMin?: T;
+  ageMax?: T;
+  status?: T;
+  metaStatus?: T;
+  errorMessage?: T;
+  impressions?: T;
+  reach?: T;
+  clicks?: T;
+  spend?: T;
+  metaCampaignId?: T;
+  metaAdId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2118,6 +2566,17 @@ export interface PlatformSettingsData {
   bookingFee?: number | null;
   serviceFeePercent?: number | null;
   defaultVatRate?: number | null;
+  /**
+   * Optional paid extras. Prices are in the event currency. “Tickets by SMS” and “Event reminder” are only shown to buyers once Twilio is set up on the booking API. “Refund protection” refunds the tickets and fees automatically when the buyer cancels before the event starts.
+   */
+  services?: {
+    smsTicketsEnabled?: boolean | null;
+    smsTicketsPrice?: number | null;
+    refundProtectionEnabled?: boolean | null;
+    refundProtectionPrice?: number | null;
+    reminderEnabled?: boolean | null;
+    reminderPrice?: number | null;
+  };
   features?: {
     ticketSales?: boolean | null;
     guestCheckout?: boolean | null;
@@ -2164,6 +2623,94 @@ export interface PlatformSettingsData {
     handoverEmail?: string | null;
     handoverWhatsapp?: string | null;
   };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Sender and footer of the emails you send from the Marketing center.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing-settings".
+ */
+export interface MarketingSetting {
+  id: string;
+  senderName: string;
+  /**
+   * Must be on the verified domain (nordicaffairsmedia.com). Empty = the website's default sender (EMAIL_FROM).
+   */
+  senderEmail?: string | null;
+  /**
+   * Where replies go, e.g. info@nordicaffairsmedia.com.
+   */
+  replyTo?: string | null;
+  /**
+   * Up to 11 letters or digits, e.g. NordicAffairs. Empty = the Twilio number (TWILIO_FROM). Some countries do not allow names.
+   */
+  smsSender?: string | null;
+  /**
+   * Shown at the bottom of every email: who you are and where you are.
+   */
+  footerText?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Emails that send themselves when something happens. You decide whether, and when.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing-automations".
+ */
+export interface MarketingAutomation {
+  id: string;
+  /**
+   * An email to buyers who picked tickets, said yes to marketing and did not pay, with a button back to the event.
+   */
+  abandoned?: {
+    enabled?: boolean | null;
+    waitHours?: ('1' | '2' | '3' | '6' | '12' | '24') | null;
+    /**
+     * A code from Ticketing → Promo codes. Prefer one that is only valid for a short time: people can learn to leave the checkout to get a discount. Empty = no discount.
+     */
+    discountCode?: string | null;
+    subjectEn?: string | null;
+    messageEn?: string | null;
+    buttonEn?: string | null;
+    subjectSv?: string | null;
+    messageSv?: string | null;
+    buttonSv?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Connect your Facebook Page, then create ads for your events under "Event ads". Ads run on Facebook and Instagram as your page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "advertising-settings".
+ */
+export interface AdvertisingSetting {
+  id: string;
+  /**
+   * Filled in when you connect. Or type it in yourself.
+   */
+  pageId?: string | null;
+  pageName?: string | null;
+  /**
+   * Numbers only (with or without act_). Meta bills the payment method of this ad account.
+   */
+  adAccountId?: string | null;
+  adAccountName?: string | null;
+  /**
+   * Saved when you connect. Never shown again. You can also paste a token from Meta Business Suite instead of connecting.
+   */
+  accessToken?: string | null;
+  tokenExpiresAt?: string | null;
+  connectedAt?: string | null;
+  /**
+   * Copy the ID of the page you want into "Facebook Page ID".
+   */
+  pagesFound?: string | null;
+  adAccountsFound?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2388,6 +2935,16 @@ export interface PlatformSettingsSelect<T extends boolean = true> {
   bookingFee?: T;
   serviceFeePercent?: T;
   defaultVatRate?: T;
+  services?:
+    | T
+    | {
+        smsTicketsEnabled?: T;
+        smsTicketsPrice?: T;
+        refundProtectionEnabled?: T;
+        refundProtectionPrice?: T;
+        reminderEnabled?: T;
+        reminderPrice?: T;
+      };
   features?:
     | T
     | {
@@ -2414,6 +2971,60 @@ export interface PlatformSettingsSelect<T extends boolean = true> {
         handoverEmail?: T;
         handoverWhatsapp?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing-settings_select".
+ */
+export interface MarketingSettingsSelect<T extends boolean = true> {
+  senderName?: T;
+  senderEmail?: T;
+  replyTo?: T;
+  smsSender?: T;
+  footerText?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing-automations_select".
+ */
+export interface MarketingAutomationsSelect<T extends boolean = true> {
+  abandoned?:
+    | T
+    | {
+        enabled?: T;
+        waitHours?: T;
+        discountCode?: T;
+        subjectEn?: T;
+        messageEn?: T;
+        buttonEn?: T;
+        subjectSv?: T;
+        messageSv?: T;
+        buttonSv?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "advertising-settings_select".
+ */
+export interface AdvertisingSettingsSelect<T extends boolean = true> {
+  pageId?: T;
+  pageName?: T;
+  adAccountId?: T;
+  adAccountName?: T;
+  accessToken?: T;
+  tokenExpiresAt?: T;
+  connectedAt?: T;
+  pagesFound?: T;
+  adAccountsFound?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

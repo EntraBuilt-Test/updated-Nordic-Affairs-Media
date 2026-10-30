@@ -15,9 +15,9 @@ export function EnquireButton({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-2.5 px-4 py-2 rounded border border-slate-700/80 bg-[#0d1c2d] hover:bg-[#132438] text-white font-medium text-[11.5px] uppercase tracking-[0.1em] transition-colors ${className}`}
+      className={`inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-md border border-slate-700/80 bg-[#0d1c2d] hover:bg-[#132438] hover:border-slate-600 text-white font-semibold text-[11.5px] uppercase tracking-[0.08em] shadow-sm transition-all duration-150 ${className}`}
     >
-      <MessageCircle aria-hidden="true" className="size-4 text-emerald-400" />
+      <MessageCircle aria-hidden="true" className="size-4 text-emerald-400 shrink-0" strokeWidth={2} />
       <span>{label}</span>
     </a>
   )

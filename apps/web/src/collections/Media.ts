@@ -1,14 +1,27 @@
 import type { CollectionConfig } from 'payload'
 import { anyone, staff } from '@/access/roles'
-import { revalidateOnChange, revalidateOnDelete } from '@/lib/revalidate'
+import { placeOnTop } from '@/lib/orderTop'
+import { revalidateMediaChange, revalidateMediaDelete } from '@/lib/revalidate'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  // The list opens newest first (a new upload is on page 1). "Rearrange" (above the list) switches to
+  // drag-and-drop order, and Publish makes the website show that order. New files start at the top.
   orderable: true,
-  hooks: { afterChange: [revalidateOnChange], afterDelete: [revalidateOnDelete] },
-  admin: { group: 'Media library', defaultColumns: ['filename', 'alt', 'credit'] },
+  defaultSort: '-createdAt',
+  hooks: { beforeChange: [placeOnTop], afterChange: [revalidateMediaChange], afterDelete: [revalidateMediaDelete] },
+  admin: {
+    group: 'Media library',
+    defaultColumns: ['filename', 'alt', 'credit'],
+    pagination: { defaultLimit: 25, limits: [25, 50, 100] },
+    components: { beforeListTable: ['/components/admin/FastUploadBanner#MediaListUpload'] },
+  },
   access: { read: anyone, create: staff, update: staff, delete: staff },
   upload: {
+    // No "Paste URL" button: files are chosen from the computer or dropped in.
+    pasteURL: false,
+    // The built-in Bulk Upload is replaced by the fast one above the list (components/admin/FastUploadBanner).
+    bulkUpload: false,
     mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
     focalPoint: true,
     // Pre-cut sizes; next/image picks the closest one and serves AVIF/WebP.

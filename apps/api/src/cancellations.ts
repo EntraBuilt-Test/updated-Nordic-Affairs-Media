@@ -1,5 +1,6 @@
 import { tickets } from './orders.js'
 import { release } from './stock.js'
+import { freeSeat } from './seating.js'
 
 /**
  * Cancels tickets and puts their places back on sale. Each ticket is flipped from
@@ -16,6 +17,7 @@ export async function cancelOrderTickets(orderId: string): Promise<number> {
     )
     if (!t) break
     await release(t.eventId, t.tierId, 1)
+    if (t.seat) await freeSeat(t.eventId, t.seat)
     count++
   }
   return count
@@ -28,5 +30,6 @@ export async function cancelTicket(code: string): Promise<boolean> {
   )
   if (!t) return false
   await release(t.eventId, t.tierId, 1)
+  if (t.seat) await freeSeat(t.eventId, t.seat)
   return true
 }

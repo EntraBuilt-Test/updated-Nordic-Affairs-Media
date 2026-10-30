@@ -1,35 +1,49 @@
-import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import type { CollectionConfig } from 'payload'
 import { anyone, staff } from '@/access/roles'
-import { revalidateOnChange, revalidateOnDelete } from '@/lib/revalidate'
-
-export const MAX_VIDEO_BYTES = 200 * 1024 * 1024
-
-/** Rejects files over 200 MB (works for both normal and direct-to-storage uploads). */
-const limitSize: CollectionBeforeValidateHook = ({ data, req }) => {
-  const size = (req as { file?: { size?: number } }).file?.size ?? (data as { filesize?: number } | undefined)?.filesize
-  if (typeof size === 'number' && size > MAX_VIDEO_BYTES) {
-    throw new Error(
-      `This file is ${(size / 1024 / 1024).toFixed(0)} MB. The limit is 200 MB. Please compress it or add a YouTube/Vimeo link instead.`,
-    )
-  }
-  return data
-}
+import { placeOnTop } from '@/lib/orderTop'
+import { revalidateMediaChange, revalidateMediaDelete } from '@/lib/revalidate'
 
 /**
- * Video and audio files (MP4, MOV, WebM, MP3, WAV ...), short or long, up to 200 MB.
+ * Video and audio files (MP4, MOV, WebM, MP3, WAV ...), short or long. Bulk upload sends big files straight to storage in 64 MB pieces, so there is no size limit on our side (Cloudflare R2 allows up to 5 TB per file). "Create new" also has no size limit (big files go in pieces).
  * Everything uploaded here appears on the public Media page.
  */
 export const Videos: CollectionConfig = {
   slug: 'videos',
   labels: { singular: 'Video / audio', plural: 'Videos & audio' },
   orderable: true,
-  admin: { group: 'Media library', useAsTitle: 'title', defaultColumns: ['title', 'filename', 'format'] },
+  defaultSort: '-createdAt',
+  admin: {
+    group: 'Media library',
+    description: 'Bulk upload bar above the list: any size, any number. Create New: one file, no size limit.',
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'filename', 'format'],
+    pagination: { defaultLimit: 25, limits: [25, 50, 100] },
+    components: { beforeListTable: ['/components/admin/FastUploadBanner#VideosListUpload'] },
+  },
+  // "Create New" (one file, up to 5 GB) and the Bulk upload bar above the list (any size, any number) both work.
   access: { read: anyone, create: staff, update: staff, delete: staff },
-  upload: { mimeTypes: ['video/*', 'audio/*'] },
+  upload: {
+    // Every audio and video format; a few come with an "application/..." type from the browser.
+    mimeTypes: [
+      'video/*',
+      'audio/*',
+      'application/mxf',
+      'application/ogg',
+      'application/vnd.rn-realmedia',
+      'application/vnd.rn-realmedia-vbr',
+      'application/x-mpegURL',
+      'application/vnd.apple.mpegurl',
+    ],
+    pasteURL: false,
+    // Staff-only. Without this, Payload downloads every finished upload back to the server to inspect it (the file-type list forces it),
+    // which fails with "Something went wrong" on big videos. The file types are still limited by the picker (mimeTypes below).
+    allowRestrictedFileTypes: true,
+    bulkUpload: false,
+  },
   hooks: {
-    beforeValidate: [limitSize],
-    afterChange: [revalidateOnChange],
-    afterDelete: [revalidateOnDelete],
+    beforeChange: [placeOnTop],
+    afterChange: [revalidateMediaChange],
+    afterDelete: [revalidateMediaDelete],
   },
   fields: [
     {

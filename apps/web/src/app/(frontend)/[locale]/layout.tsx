@@ -11,7 +11,7 @@ import {
 } from 'next/font/google'
 import { isLocale, localeMeta, locales, type Locale } from '@/i18n/config'
 import { getDictionary } from '@/i18n/getDictionary'
-import { getSiteChrome, getGalleryMenu } from '@/lib/queries'
+import { getSiteChrome, getGalleryMenu, getBackgroundMusic } from '@/lib/queries'
 import { href, siteUrl } from '@/lib/site'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { themeBootScript } from '@/lib/theme'
@@ -21,6 +21,7 @@ import { legacyAssetUrl } from '@/lib/wordpress/legacyAsset'
 import { whatsappUrl } from '@/lib/nav'
 import { ChatWidget, type ChatLabels } from '@/components/assistant/ChatWidget'
 import { CookieConsent } from '@/components/privacy/CookieConsent'
+import { BackgroundMusic } from '@/components/layout/BackgroundMusic'
 import { Tracker } from '@/components/analytics/Tracker'
 import '@/styles/globals.css'
 
@@ -118,9 +119,11 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) notFound()
 
   const t = getDictionary(locale)
-  const [{ navigation, settings }, galleries] = await Promise.all([
+  const [{ navigation, settings }, galleries, music] = await Promise.all([
     getSiteChrome(locale),
     getGalleryMenu(locale).catch(() => []),
+    // The track ticked in the admin (Background music). No track = no music and no Play button.
+    getBackgroundMusic().catch(() => null),
   ])
 
   return (
@@ -132,16 +135,6 @@ export default async function LocaleLayout({
       <head>
         {/* Applies the saved light/navy choice before the first paint. */}
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        />
       </head>
       <body className="flex min-h-dvh flex-col">
         <a
@@ -172,10 +165,16 @@ export default async function LocaleLayout({
           }}
         />
         <ChatWidget locale={locale} labels={chatLabels(t)} whatsappHref={whatsappUrl(settings.whatsapp, t.whatsappMessage)} />
+        {music ? <BackgroundMusic src={withVersion(music.url, music.version)} /> : null}
         <Tracker />
       </body>
     </html>
   )
+}
+
+/** A replaced audio file keeps its address: the changed time in the link makes browsers fetch the new one. */
+function withVersion(url: string, version: string): string {
+  return version ? `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(version)}` : url
 }
 
 const CHAT_KEYS = [

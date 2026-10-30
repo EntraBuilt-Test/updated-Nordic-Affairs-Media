@@ -2,6 +2,7 @@ import type { ObjectId } from 'mongodb'
 import { getDb } from './db.js'
 import { orders } from './orders.js'
 import { releasePromoUse } from './catalog.js'
+import { releaseOrderSeats } from './seating.js'
 
 /**
  * Ticket stock, like a farm stall's tally board: one counter per tier saying how
@@ -98,7 +99,8 @@ export async function sweepExpiredHolds(now = new Date()): Promise<number> {
 }
 
 /** Releases every active hold of one order (checkout cancelled or session expired). */
-export async function releaseOrderHolds(orderId: string): Promise<void> {
+export async function releaseOrderHolds(orderId: string, opts: { keepSeats?: boolean } = {}): Promise<void> {
+  if (!opts.keepSeats) await releaseOrderSeats(orderId)
   const holds = getDb().collection<Hold>('booking_holds')
   for (;;) {
     const hold = await holds.findOneAndUpdate(

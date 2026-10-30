@@ -134,6 +134,7 @@ internalRouter.get('/internal/events/:id/orders', async (req, res) => {
         o,
         all.filter((t) => t.orderId === o._id),
       ),
+      phone: o.phone ?? null,
       refundedAmount: o.refundedAmount ?? 0,
       refundable: Boolean(o.stripePaymentIntentId),
       note: o.note ?? null,
@@ -159,6 +160,7 @@ internalRouter.get('/internal/events/:id/attendees', async (req, res) => {
         name: t.holderName,
         email: o?.email ?? '',
         tier: t.tierName,
+        seat: t.seatLabel ?? null,
         status: t.status,
         checkedInAt: t.checkedInAt ?? null,
         order: t.orderId,
@@ -321,10 +323,12 @@ internalRouter.post('/internal/events/:id/announce', async (req, res) => {
     })
     .safeParse(req.body)
   if (!parsed.success) return void res.status(400).json({ error: 'invalid_request' })
-  const emails = await orders().distinct('email', {
-    eventId: req.params.id,
-    status: { $in: ['paid', 'partially_refunded'] },
-  })
+  const emails = (
+    await orders().distinct('email', {
+      eventId: req.params.id,
+      status: { $in: ['paid', 'partially_refunded'] },
+    })
+  ).filter(Boolean)
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#121414;line-height:1.6"><p style="font-size:11px;letter-spacing:3px;color:#835c20">NORDIC AFFAIRS MEDIA</p>${esc(
     parsed.data.message,
   )
@@ -358,7 +362,7 @@ internalRouter.post('/internal/checkin', async (req, res) => {
   const code = normaliseCode(parsed.data.code)
   const ticket = await tickets().findOne({ code })
   if (!ticket) return void res.json({ result: 'not_found' })
-  const info = { holder: ticket.holderName, tier: ticket.tierName, order: ticket.orderId }
+  const info = { holder: ticket.holderName, tier: ticket.tierName, order: ticket.orderId, seat: ticket.seatLabel ?? null }
   if (ticket.eventId !== parsed.data.eventId) {
     const other = await orders().findOne({ _id: ticket.orderId })
     return void res.json({ result: 'wrong_event', ...info, event: other?.eventTitleEn ?? '' })
@@ -376,7 +380,15 @@ internalRouter.post('/internal/checkin', async (req, res) => {
   )
   if (!updated)
     return void res.json({ result: 'already', ...info, checkedInAt: ticket.checkedInAt ?? null })
-  res.json({ result: 'ok', ...info })
+  const order = await orders().findOne({ _id: ticket.orderId })
+  res.json({
+    result: 'ok',
+    ...info,
+    code,
+    event: order?.eventTitleEn ?? '',
+    demo: Boolean(order?.demo),
+    checkedInAt: new Date().toISOString(),
+  })
 })
 
 /** Manual search at the gate by name or order reference (PRD G-03). */
@@ -397,6 +409,7 @@ internalRouter.get('/internal/events/:id/search', async (req, res) => {
       tier: t.tierName,
       order: t.orderId,
       status: t.status,
+      seat: t.seatLabel ?? null,
     })),
   })
 })

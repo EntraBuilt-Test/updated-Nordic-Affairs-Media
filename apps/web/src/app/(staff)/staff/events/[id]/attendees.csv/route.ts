@@ -22,6 +22,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     'Name',
     'Email',
     'Ticket type',
+    'Seat',
     'Status',
     'Checked in at',
     'Order',
@@ -29,7 +30,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     'Ticket code',
   ]
   const rows = r.data.attendees.map((a) =>
-    [a.name, a.email, a.tier, a.status, a.checkedInAt ?? '', a.order, a.source, a.code]
+    [a.name, a.email, a.tier, a.seat ?? '', a.status, a.checkedInAt ?? '', a.order, a.source, a.code]
       .map(cell)
       .join(','),
   )

@@ -108,6 +108,27 @@ export const Galleries: CollectionConfig = {
   },
   versions: { drafts: true },
   hooks: {
+    // "Add many photos" (picked from the library or uploaded in bulk) are appended to the photo
+    // list before the form is checked, so a new gallery can be filled with this box alone.
+    beforeValidate: [
+      ({ data, originalDoc }) => {
+        if (!data) return data
+        const d = data as Record<string, unknown>
+        const idOf = (v: unknown): string | null =>
+          v && typeof v === 'object' && 'id' in v ? String((v as { id: unknown }).id) : v ? String(v) : null
+        const extra = (Array.isArray(d.addPhotos) ? d.addPhotos : []).map(idOf).filter((x): x is string => !!x)
+        if (extra.length) {
+          const prev = (originalDoc as { photos?: unknown } | undefined)?.photos
+          const rows = (Array.isArray(d.photos) ? d.photos : Array.isArray(prev) ? prev : []) as {
+            image?: unknown
+          }[]
+          const have = new Set(rows.map((r) => idOf(r?.image)))
+          d.photos = [...rows, ...extra.filter((id) => !have.has(id)).map((id) => ({ image: id }))]
+        }
+        d.addPhotos = []
+        return data
+      },
+    ],
     // Lists only need the cover and the count, so they never load every photo.
     beforeChange: [
       ({ data }) => {
@@ -157,9 +178,26 @@ export const Galleries: CollectionConfig = {
       },
     },
     {
+      name: 'bulkPhotosTool',
+      type: 'ui',
+      admin: { components: { Field: '/components/admin/GalleryBulkPhotos#GalleryBulkPhotos' } },
+    },
+    {
+      name: 'addPhotos',
+      label: 'Add many photos',
+      type: 'upload',
+      relationTo: 'media',
+      hasMany: true,
+      admin: {
+        allowCreate: false,
+        description:
+          'Pick several photos from the library (or upload them with the box above). On Save they move to the end of the photo list below.',
+      },
+    },
+    {
       name: 'photos',
       type: 'array',
-      minRows: 1,
+      // No minimum here: a new gallery may be filled only through "Add many photos" above.
       fields: [
         { name: 'image', type: 'upload', relationTo: 'media', required: true },
         { name: 'caption', type: 'text', localized: true },
