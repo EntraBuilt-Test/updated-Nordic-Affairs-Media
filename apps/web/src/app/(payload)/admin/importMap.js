@@ -30,6 +30,10 @@ import { VideosListUpload as VideosListUpload_3288621a541b25278480fe069bc10c89 }
 import { DocumentsListUpload as DocumentsListUpload_3288621a541b25278480fe069bc10c89 } from '../../../components/admin/FastUploadBanner'
 import { EventMapPicker as EventMapPicker_3da6aa2b0f9f1bf99e6b0ff1a6947281 } from '../../../components/admin/EventMapPicker'
 import { CampaignSend as CampaignSend_0baf36a0e8ed39e20877086d678360ba } from '../../../components/admin/CampaignSend'
+import { ContactRowLabel as ContactRowLabel_8e62df63ddcf83345e8b959799e58927 } from '../../../components/admin/ContactRowLabel'
+import { PosterAiPanel as PosterAiPanel_4ea59295f76d401ceb96b820165ebc37 } from '../../../components/admin/PosterAiPanel'
+import { PosterSharePanel as PosterSharePanel_3163a02dd0461dd1419e88afc4cba46e } from '../../../components/admin/PosterSharePanel'
+import { PosterEventPanel as PosterEventPanel_1dcdd657ffb916cc7ad114d22f77b50f } from '../../../components/admin/PosterEventPanel'
 import { AdActions as AdActions_b9ccfdf3fb7e1ca305570811130cd50d } from '../../../components/admin/AdActions'
 import { AccountActions as AccountActions_b564369a058367a481e030d85bf60b21 } from '../../../components/admin/AccountActions'
 import { AbandonedTextHelp as AbandonedTextHelp_62e7b5c1e8f70a6806d39d8bec68c8d6 } from '../../../components/admin/AbandonedTextHelp'
@@ -84,6 +88,10 @@ export const importMap = {
   "/components/admin/FastUploadBanner#DocumentsListUpload": DocumentsListUpload_3288621a541b25278480fe069bc10c89,
   "/components/admin/EventMapPicker#EventMapPicker": EventMapPicker_3da6aa2b0f9f1bf99e6b0ff1a6947281,
   "/components/admin/CampaignSend#CampaignSend": CampaignSend_0baf36a0e8ed39e20877086d678360ba,
+  "/components/admin/ContactRowLabel#ContactRowLabel": ContactRowLabel_8e62df63ddcf83345e8b959799e58927,
+  "/components/admin/PosterAiPanel#PosterAiPanel": PosterAiPanel_4ea59295f76d401ceb96b820165ebc37,
+  "/components/admin/PosterSharePanel#PosterSharePanel": PosterSharePanel_3163a02dd0461dd1419e88afc4cba46e,
+  "/components/admin/PosterEventPanel#PosterEventPanel": PosterEventPanel_1dcdd657ffb916cc7ad114d22f77b50f,
   "/components/admin/AdActions#AdActions": AdActions_b9ccfdf3fb7e1ca305570811130cd50d,
   "/components/admin/AccountActions#AccountActions": AccountActions_b564369a058367a481e030d85bf60b21,
   "/components/admin/AbandonedTextHelp#AbandonedTextHelp": AbandonedTextHelp_62e7b5c1e8f70a6806d39d8bec68c8d6,

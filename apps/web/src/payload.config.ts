@@ -13,6 +13,7 @@ import { Documents } from './collections/Documents'
 import { Videos } from './collections/Videos'
 import { Music } from './collections/Music'
 import { EmailCampaigns, RecipientLists, TrackingLinks } from './collections/Marketing'
+import { NewsletterPosters } from './collections/Posters'
 import { EventAds } from './collections/EventAds'
 import { MarketingSettings } from './globals/MarketingSettings'
 import { AdvertisingSettings } from './globals/AdvertisingSettings'
@@ -262,6 +263,7 @@ export default buildConfig({
     EmailCampaigns,
     RecipientLists,
     TrackingLinks,
+    NewsletterPosters,
     EventAds,
     Users,
     AuditLog,

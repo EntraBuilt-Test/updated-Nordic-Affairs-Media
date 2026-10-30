@@ -17,6 +17,7 @@ export function mainLinks(locale: Locale, t: Dictionary): MainLink[] {
     { key: 'media', label: t.navMedia, href: `${p}/media` },
     { key: 'events', label: t.navEvents, href: `${p}/events` },
     { key: 'articles', label: t.navArticles, href: `${p}/articles` },
+    { key: 'newsletter', label: t.navNewsletter, href: `${p}/newsletters` },
     { key: 'contact', label: t.navContact, href: `${p}/contact` },
   ]
 }
@@ -34,6 +35,7 @@ export function activeKey(pathname: string, locale: Locale): string | null {
     news: 'articles',
     events: 'events',
     booking: 'events',
+    newsletters: 'newsletter',
     contact: 'contact',
   }
   return (first && map[first]) || null

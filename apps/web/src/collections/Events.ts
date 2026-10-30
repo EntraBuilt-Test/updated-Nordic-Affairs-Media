@@ -1,7 +1,38 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionAfterChangeHook, CollectionConfig } from 'payload'
 import { organizers, publishedOrStaff, hiddenUnless } from '@/access/roles'
 import { placeholderField, seoFields, slugField } from '@/fields/common'
 import { revalidateOnChange, revalidateOnDelete } from '@/lib/revalidate'
+
+/**
+ * An event made from a newsletter poster (button on the poster, or the poster picked by hand
+ * here) sends a short email to the agency owner. POSTER_NOTIFY_EMAIL can change the address.
+ */
+const notifyPosterEvent: CollectionAfterChangeHook = async ({ doc, previousDoc, operation, req }) => {
+  const posterId = typeof doc.fromPoster === 'object' && doc.fromPoster ? doc.fromPoster.id : doc.fromPoster
+  const hadPoster = previousDoc?.fromPoster
+  if (!posterId || (operation !== 'create' && hadPoster)) return doc
+  try {
+    const poster = await req.payload
+      .findByID({ collection: 'newsletter-posters', id: posterId, depth: 0, overrideAccess: true })
+      .catch(() => null)
+    const { sendSiteEmail, escapeHtml } = await import('@/lib/mail')
+    const site = process.env.NEXT_PUBLIC_SITE_URL || ''
+    const to = process.env.POSTER_NOTIFY_EMAIL || 'ranaprathapprofile@gmail.com'
+    const who = (req.user as { email?: string; name?: string } | null)?.email || 'someone'
+    const title = String(doc.title ?? 'New event')
+    const adminLink = `${site}/admin/collections/events/${doc.id}`
+    const posterLink = poster ? `${site}/en/newsletters/${(poster as { slug?: string }).slug ?? ''}` : ''
+    await sendSiteEmail({
+      to,
+      subject: `New event created from a poster: ${title}`,
+      text: `${who} created the event "${title}" from a newsletter poster.\n\nOpen the event: ${adminLink}\n${posterLink ? `Poster page: ${posterLink}\n` : ''}`,
+      html: `<p><strong>${escapeHtml(who)}</strong> created the event <strong>${escapeHtml(title)}</strong> from a newsletter poster.</p><p><a href="${adminLink}">Open the event</a>${posterLink ? ` · <a href="${posterLink}">Poster page</a>` : ''}</p>`,
+    })
+  } catch (e) {
+    console.error('[events] poster notice not sent', e)
+  }
+  return doc
+}
 
 export const currencies = ['SEK', 'EUR', 'NOK', 'DKK'] as const
 
@@ -23,9 +54,16 @@ export const Events: CollectionConfig = {
   },
   access: { read: publishedOrStaff, create: organizers, update: organizers, delete: organizers },
   versions: { drafts: true },
-  hooks: { afterChange: [revalidateOnChange], afterDelete: [revalidateOnDelete] },
+  hooks: { afterChange: [revalidateOnChange, notifyPosterEvent], afterDelete: [revalidateOnDelete] },
   fields: [
     { name: 'title', type: 'text', required: true, localized: true },
+    {
+      name: 'fromPoster',
+      type: 'relationship',
+      relationTo: 'newsletter-posters',
+      label: 'Made from newsletter poster',
+      admin: { position: 'sidebar', description: 'Set when this event comes from a newsletter poster. Saving it sends a short notice email to the agency owner.' },
+    },
     { name: 'summary', type: 'textarea', localized: true },
     {
       type: 'tabs',
