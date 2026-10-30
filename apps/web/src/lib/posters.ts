@@ -1,6 +1,7 @@
 import 'server-only'
 import type { Media } from '@/payload-types'
 import { isDoc } from '@/lib/payload'
+import { bindLayers, parseLayers, type PosterLayer } from '@/lib/posterLayers'
 
 /** Shape of a newsletter poster as the website reads it (pictures loaded with depth 1+). */
 export type PosterDoc = {
@@ -24,6 +25,8 @@ export type PosterDoc = {
   venueName?: string | null
   ctaLabel?: string | null
   ctaUrl?: string | null
+  layers?: unknown
+  overlay?: number | null
   designed?: boolean | null
   brandName?: string | null
   brandTagline?: string | null
@@ -47,6 +50,22 @@ export function posterCover(p: PosterDoc): Media | null {
   const candidate =
     p.mode === 'template' ? p.frontImage : p.mode === 'ai' ? p.generatedImage : p.images?.[0]?.image
   return isDoc(candidate) ? candidate : null
+}
+
+/** The text layers of a poster with linked fields filled in, ready for the public pages. */
+export function posterTextLayers(p: PosterDoc): PosterLayer[] {
+  return bindLayers(
+    parseLayers(p.layers),
+    { title: p.title, summary: p.summary, frontHeadline: p.frontHeadline, backTitle: p.backTitle, backText: p.backText },
+    true,
+  )
+}
+
+/** Address of the main picture (the library keeps several sizes; this is the page-sized one). */
+export function posterImageUrl(m: Media | null | undefined): string | null {
+  if (!m) return null
+  const sized = (m.sizes as { feature?: { url?: string | null } } | undefined)?.feature?.url
+  return sized || m.url || null
 }
 
 /** Only http(s) links and site paths are allowed as the button link. */

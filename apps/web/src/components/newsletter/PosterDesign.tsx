@@ -1,5 +1,7 @@
 import { MediaImage } from '@/components/ui/MediaImage'
-import { posterCover, safeLink, type PosterDoc } from '@/lib/posters'
+import { PosterCanvas } from '@/components/newsletter/PosterCanvas'
+import { posterCover, posterImageUrl, safeLink, type PosterDoc } from '@/lib/posters'
+import type { PosterLayer } from '@/lib/posterLayers'
 
 /**
  * The designed poster page: header, big picture, numbers, quote, boxes and a button.
@@ -8,7 +10,7 @@ import { posterCover, safeLink, type PosterDoc } from '@/lib/posters'
 const NAVY = 'bg-[#0f2447]'
 const GOLD = '#c8a24a'
 
-export function PosterDesign({ poster }: { poster: PosterDoc }) {
+export function PosterDesign({ poster, layers = [] }: { poster: PosterDoc; layers?: PosterLayer[] }) {
   const cover = posterCover(poster)
   const stats = (poster.stats ?? []).filter((s) => s.value)
   const features = (poster.features ?? []).filter((f) => f.title)
@@ -33,9 +35,15 @@ export function PosterDesign({ poster }: { poster: PosterDoc }) {
           ) : null}
         </div>
         <div className="relative min-h-[320px] md:min-h-full">
-          <div className="absolute inset-0">
-            <MediaImage media={cover} ratio="2/3" sizes="(min-width:768px) 40vw, 95vw" priority className="!aspect-auto h-full w-full" fallbackLabel={poster.title} />
-          </div>
+          {layers.length > 0 && poster.mode === 'ai' ? (
+            <div className="h-full w-full">
+              <PosterCanvas image={posterImageUrl(cover)} layers={layers} overlay={poster.overlay} alt={poster.title} style={{ height: '100%' }} />
+            </div>
+          ) : (
+            <div className="absolute inset-0">
+              <MediaImage media={cover} ratio="2/3" sizes="(min-width:768px) 40vw, 95vw" priority className="!aspect-auto h-full w-full" fallbackLabel={poster.title} />
+            </div>
+          )}
         </div>
       </div>
 

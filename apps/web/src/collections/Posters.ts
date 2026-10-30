@@ -55,6 +55,7 @@ export const NewsletterPosters: CollectionConfig = {
       label: 'Template (3D flip card)',
       admin: { condition: when('template') },
       fields: [
+        { name: 'studio', type: 'ui', admin: { components: { Field: '/components/admin/PosterStudio#PosterStudio' } } },
         { name: 'frontImage', type: 'upload', relationTo: 'media', label: 'Front picture', admin: { description: 'Upload the template. The visitor sees this side first.' } },
         { name: 'backImage', type: 'upload', relationTo: 'media', label: 'Back picture (optional)', admin: { description: 'The other side of the card. Leave empty to show the text below on a plain back.' } },
         { name: 'frontHeadline', type: 'text', label: 'Headline on the front (optional)' },
@@ -95,7 +96,7 @@ export const NewsletterPosters: CollectionConfig = {
           ],
         },
         { name: 'aiReferences', type: 'upload', relationTo: 'media', hasMany: true, label: 'Reference pictures (optional)', admin: { description: 'Pictures with the look you want. They are described to the AI, so the result follows their colours and mood.' } },
-        { name: 'aiPanel', type: 'ui', admin: { components: { Field: '/components/admin/PosterAiPanel#PosterAiPanel' } } },
+        { name: 'studio', type: 'ui', admin: { components: { Field: '/components/admin/PosterStudio#PosterStudio' } } },
         { name: 'generatedImage', type: 'upload', relationTo: 'media', label: 'Generated poster', admin: { description: 'The AI result is placed here. You can also replace it with your own picture.' } },
       ],
     },
@@ -106,6 +107,7 @@ export const NewsletterPosters: CollectionConfig = {
       label: 'Pictures and details',
       admin: { condition: when('manual') },
       fields: [
+        { name: 'studio', type: 'ui', admin: { components: { Field: '/components/admin/PosterStudio#PosterStudio' } } },
         {
           name: 'images',
           type: 'array',
@@ -173,8 +175,11 @@ export const NewsletterPosters: CollectionConfig = {
       ],
     },
 
+    { name: 'layers', type: 'json', admin: { hidden: true } },
+    { name: 'overlay', type: 'number', defaultValue: 25, min: 0, max: 80, admin: { hidden: true } },
+
     // ── Share and publish ───────────────────────────────────────
-    { name: 'published', type: 'checkbox', defaultValue: false, label: 'Show on the website', admin: { position: 'sidebar', description: 'Tick, then Save. Only published posters have a public link.' } },
+    { name: 'published', type: 'checkbox', defaultValue: true, label: 'Show on the website', admin: { position: 'sidebar', description: 'Ticked = the poster page is public. Untick to keep it hidden (the link then shows “not found”).' } },
     { name: 'sharePanel', type: 'ui', admin: { position: 'sidebar', components: { Field: '/components/admin/PosterSharePanel#PosterSharePanel' } } },
     { name: 'eventPanel', type: 'ui', admin: { position: 'sidebar', components: { Field: '/components/admin/PosterEventPanel#PosterEventPanel' } } },
     { name: 'createdEvent', type: 'relationship', relationTo: 'events', admin: { position: 'sidebar', readOnly: true, description: 'The event made from this poster.' } },

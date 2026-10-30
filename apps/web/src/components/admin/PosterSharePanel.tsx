@@ -40,8 +40,11 @@ export function PosterSharePanel() {
     <div style={{ marginBottom: 16 }}>
       <label className="field-label">Share this poster</label>
       <input readOnly value={url} onFocus={(e) => e.currentTarget.select()} style={{ width: '100%', marginBottom: 8 }} />
-      {!published ? <p style={{ opacity: 0.8, margin: '0 0 8px' }}>Tick “Show on the website” and Save first, or the link shows “not found”.</p> : null}
+      {!published ? <p style={{ margin: '0 0 8px', color: '#f6b26b' }}>Not public yet: tick “Show on the website” and Save, or the link shows “not found”.</p> : null}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <a className="btn btn--style-primary btn--size-small" href={url} target="_blank" rel="noopener noreferrer">
+          Open on the website
+        </a>
         <button type="button" className="btn btn--style-primary btn--size-small" onClick={copy}>
           {copied ? 'Copied' : 'Copy link'}
         </button>

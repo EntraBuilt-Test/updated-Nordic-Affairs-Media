@@ -6,7 +6,8 @@ import { getDictionary } from '@/i18n/getDictionary'
 import { getPayloadClient, isDoc } from '@/lib/payload'
 import { buildMetadata } from '@/lib/seo'
 import { href, siteUrl } from '@/lib/site'
-import { posterCover, safeLink, type PosterDoc } from '@/lib/posters'
+import { posterCover, posterImageUrl, posterTextLayers, safeLink, type PosterDoc } from '@/lib/posters'
+import { PosterCanvas } from '@/components/newsletter/PosterCanvas'
 import { FlipPoster } from '@/components/newsletter/FlipPoster'
 import { PosterDesign } from '@/components/newsletter/PosterDesign'
 import { MediaImage } from '@/components/ui/MediaImage'
@@ -58,7 +59,9 @@ export default async function PosterPage({ params }: Props) {
   if (!poster) notFound()
 
   const cover = posterCover(poster)
-  const cta = safeLink(poster.ctaUrl)
+  const cta = safeLink(poster.ctaUrl) ?? safeLink(poster.dButtonUrl)
+  const layers = posterTextLayers(poster)
+  const hasLayers = poster.mode !== 'manual' && layers.length > 0
   const extra = (poster.images ?? []).slice(1).filter((i) => isDoc(i.image as never))
   const when = poster.eventDate
     ? new Date(poster.eventDate).toLocaleString(locale, { dateStyle: 'full', timeStyle: 'short', timeZone: 'Europe/Stockholm' })
@@ -74,7 +77,7 @@ export default async function PosterPage({ params }: Props) {
         </Link>
         <h1 className="sr-only">{poster.title}</h1>
         <div className="mx-auto mt-6 max-w-4xl">
-          <PosterDesign poster={poster} />
+          <PosterDesign poster={poster} layers={layers} />
           <div className="mt-8">
             <ShareLinks url={`${siteUrl}/${locale}/newsletters/${slug}`} title={poster.title} label={t.share} />
           </div>
@@ -100,7 +103,17 @@ export default async function PosterPage({ params }: Props) {
               backText={poster.backText}
               accent={poster.accentColor}
               animation={poster.animation}
+              layers={layers}
+              overlay={poster.overlay}
             />
+          ) : hasLayers ? (
+            <div className="mx-auto max-w-md overflow-hidden rounded-xl shadow-[0_18px_50px_rgba(0,0,0,.35)]">
+              <PosterCanvas image={posterImageUrl(cover)} layers={layers} overlay={poster.overlay} alt={poster.title} />
+            </div>
+          ) : cta ? (
+            <a href={cta} aria-label={poster.ctaLabel || poster.title} className="block">
+              <MediaImage media={cover} ratio="2/3" sizes="(min-width:768px) 45vw, 95vw" priority fit="contain" fallbackLabel={poster.title} />
+            </a>
           ) : (
             <MediaImage media={cover} ratio="2/3" sizes="(min-width:768px) 45vw, 95vw" priority fit="contain" fallbackLabel={poster.title} />
           )}

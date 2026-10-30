@@ -6,7 +6,8 @@ import { getDictionary } from '@/i18n/getDictionary'
 import { getPayloadClient } from '@/lib/payload'
 import { buildMetadata } from '@/lib/seo'
 import { href } from '@/lib/site'
-import { posterCover, type PosterDoc } from '@/lib/posters'
+import { posterCover, posterImageUrl, posterTextLayers, type PosterDoc } from '@/lib/posters'
+import { PosterCanvas } from '@/components/newsletter/PosterCanvas'
 import { MediaImage } from '@/components/ui/MediaImage'
 import { EmptyState, PageHeader } from '@/components/ui/primitives'
 
@@ -51,7 +52,13 @@ export default async function NewslettersPage({ params }: Props) {
           {posters.map((p) => (
             <li key={p.id}>
               <Link href={href(locale, `/newsletters/${p.slug}`)} className="group block">
-                <MediaImage media={posterCover(p)} ratio="2/3" sizes="(min-width:1024px) 30vw, (min-width:640px) 45vw, 90vw" fit="contain" fallbackLabel={p.title} />
+                {p.mode !== 'manual' && posterTextLayers(p).length > 0 ? (
+                  <div className="overflow-hidden rounded-lg">
+                    <PosterCanvas image={posterImageUrl(posterCover(p))} layers={posterTextLayers(p)} overlay={p.overlay} alt={p.title} />
+                  </div>
+                ) : (
+                  <MediaImage media={posterCover(p)} ratio="2/3" sizes="(min-width:1024px) 30vw, (min-width:640px) 45vw, 90vw" fit="contain" fallbackLabel={p.title} />
+                )}
                 <h2 className="mt-3 font-display text-h3 text-ink group-hover:underline">{p.title}</h2>
                 {p.summary ? <p className="mt-1 line-clamp-2 text-slate">{p.summary}</p> : null}
               </Link>
