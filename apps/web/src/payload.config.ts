@@ -48,8 +48,13 @@ sharp.concurrency(1)
 
 function requireEnv(name: string): string {
   const value = process.env[name]
-  if (!value) throw new Error(`Missing environment variable ${name}. See .env.example.`)
-  return value
+  if (value) return value
+  // A preview or test deployment with no database set up at all may build and show the sample
+  // content with harmless placeholders. As soon as a real database is configured, every
+  // missing secret is an error again, so the live site can never run on a placeholder.
+  const noDatabase = !process.env.DATABASE_URI || process.env.DATABASE_URI.includes('dummy')
+  if (noDatabase) return name === 'DATABASE_URI' ? 'mongodb://dummy' : 'placeholder-not-for-production'
+  throw new Error(`Missing environment variable ${name}. See .env.example.`)
 }
 
 /** Changes to these are written to the audit log (PRD S-11). */
