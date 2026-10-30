@@ -28,24 +28,22 @@ export const NewsletterPosters: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'mode', 'published', 'updatedAt'],
     description:
-      'Make a poster in one of three ways, then share its link by email, WhatsApp and more. Anyone who opens the link lands on the poster page of the website.',
+      'Type the title and description, add pictures, then share the link by email, WhatsApp and more. Anyone who opens the link lands on the poster page of the website.',
   },
   access: { read: publicPublished, create: staff, update: staff, delete: staff },
   hooks: { afterChange: [revalidateOnChange], afterDelete: [revalidateOnDelete] },
   fields: [
     { name: 'title', type: 'text', required: true },
     slugField('title'),
+    // The template and AI ways are switched off for now. The collapsibles below stay in the code, so they
+    // can be turned back on by adding their options here again.
     {
       name: 'mode',
       type: 'radio',
       defaultValue: 'manual',
       required: true,
-      label: 'How do you want to make this poster?',
-      options: [
-        { label: '1 · Template with a 3D front and back flip', value: 'template' },
-        { label: '2 · Generate with AI from a prompt', value: 'ai' },
-        { label: '3 · Type it in myself (title, description, pictures)', value: 'manual' },
-      ],
+      admin: { hidden: true },
+      options: [{ label: 'Type it in myself (title, description, pictures)', value: 'manual' }],
     },
     { name: 'summary', type: 'textarea', label: 'Description', admin: { description: 'Shown under the poster and in the link preview.' } },
 
